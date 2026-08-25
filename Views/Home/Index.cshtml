@@ -1,8 +1,66 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+@model List<NetSplit.Models.Group>
+@{
+    ViewData["Title"] = "My Groups";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">My Groups</h2>
+        <p class="text-muted mb-0">Overview of your shared expense spaces</p>
+    </div>
+    <a asp-controller="Group" asp-action="Create" class="btn btn-primary fw-bold shadow-sm">
+        <i class="bi bi-plus-lg me-1"></i> Create Group
+    </a>
 </div>
+
+@if (Model == null || !Model.Any())
+{
+    <div class="card shadow-sm border-0 text-center p-5">
+        <div class="mb-3 text-muted">
+            <i class="bi bi-people fs-1"></i>
+        </div>
+        <h4 class="fw-bold">No Expense Groups Yet</h4>
+        <p class="text-muted">Get started by creating a group for your trip, house, or event.</p>
+        <div>
+            <a asp-controller="Group" asp-action="Create" class="btn btn-primary px-4 fw-bold">
+                <i class="bi bi-plus-circle me-1"></i> Create First Group
+            </a>
+        </div>
+    </div>
+}
+else
+{
+    <div class="row g-4">
+        @foreach (var group in Model)
+        {
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 shadow-sm border-0 rounded-3 hover-shadow transition">
+                    <div class="card-body p-4 d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h5 class="card-title fw-bold text-dark mb-0">@group.Name</h5>
+                            <span class="badge bg-primary-subtle text-primary fw-bold px-2 py-1">@group.Currency</span>
+                        </div>
+                        <p class="text-muted small mb-3 flex-grow-1">
+                            @(string.IsNullOrWhiteSpace(group.Description) ? "No description provided." : group.Description)
+                        </p>
+
+                        <div class="bg-light p-3 rounded-2 mb-3">
+                            <div class="d-flex justify-content-between text-muted small mb-1">
+                                <span><i class="bi bi-people-fill me-1"></i> Members</span>
+                                <strong class="text-dark">@group.Members.Count members</strong>
+                            </div>
+                            <div class="d-flex justify-content-between text-muted small">
+                                <span><i class="bi bi-cash-stack me-1"></i> Total Expenses</span>
+                                <strong class="text-dark">@group.Currency @group.TotalExpenses.ToString("N2")</strong>
+                            </div>
+                        </div>
+
+                        <a asp-controller="Group" asp-action="Details" asp-route-id="@group.Id" class="btn btn-outline-primary fw-bold w-100 mt-auto">
+                            Open Dashboard <i class="bi bi-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
