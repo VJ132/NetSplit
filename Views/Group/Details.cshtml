@@ -1,0 +1,260 @@
+@model NetSplit.Models.GroupDashboardViewModel
+@{
+    ViewData["Title"] = Model.Group.Name + " - Dashboard";
+}
+
+<div class="mb-4">
+    <a asp-controller="Home" asp-action="Index" class="text-decoration-none text-muted small">
+        <i class="bi bi-arrow-left me-1"></i> Back to My Groups
+    </a>
+    
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mt-2">
+        <div>
+            <h2 class="fw-bold mb-1">@Model.Group.Name</h2>
+            <p class="text-muted mb-0">
+                @(string.IsNullOrWhiteSpace(Model.Group.Description) ? "Shared group expenses and debt tracking" : Model.Group.Description)
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-controller="Group" asp-action="AddMember" asp-route-groupId="@Model.Group.Id" class="btn btn-outline-secondary fw-bold">
+                <i class="bi bi-person-plus me-1"></i> Add Member
+            </a>
+            <a asp-controller="Expense" asp-action="Create" asp-route-groupId="@Model.Group.Id" class="btn btn-primary fw-bold shadow-sm">
+                <i class="bi bi-plus-lg me-1"></i> Add Expense
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Group Stats Bar -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm p-3 rounded-3 text-center bg-white">
+            <small class="text-muted d-block text-uppercase fw-bold" style="letter-spacing:0.5px;">Members</small>
+            <span class="fs-3 fw-bold text-dark">@Model.Members.Count</span>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm p-3 rounded-3 text-center bg-white">
+            <small class="text-muted d-block text-uppercase fw-bold" style="letter-spacing:0.5px;">Currency</small>
+            <span class="fs-3 fw-bold text-primary">@Model.Group.Currency</span>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm p-3 rounded-3 text-center bg-white">
+            <small class="text-muted d-block text-uppercase fw-bold" style="letter-spacing:0.5px;">Total Expenses</small>
+            <span class="fs-3 fw-bold text-dark">@Model.Group.Currency @Model.Group.TotalExpenses.ToString("N0")</span>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm p-3 rounded-3 text-center bg-white">
+            <small class="text-muted d-block text-uppercase fw-bold" style="letter-spacing:0.5px;">Active Debts</small>
+            <span class="fs-3 fw-bold text-warning">@Model.SimplifiedDebts.Count</span>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Left Column: Individual Balances & Members -->
+    <div class="col-lg-5">
+        <!-- Current Balances Card -->
+        <div class="card border-0 shadow-sm rounded-3 mb-4">
+            <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0"><i class="bi bi-wallet2 text-primary me-2"></i>Member Balances</h5>
+                <span class="badge bg-light text-dark fw-normal">Net Standings</span>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    @foreach (var balance in Model.UserBalances)
+                    {
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-3 px-4">
+                            <div>
+                                <strong class="d-block text-dark">@balance.UserName @(balance.UserId == Model.CurrentUserId ? "(You)" : "")</strong>
+                                <small class="text-muted">Paid: @Model.Group.Currency @balance.TotalPaid.ToString("N2") • Owed: @Model.Group.Currency @balance.TotalOwed.ToString("N2")</small>
+                            </div>
+                            <div class="text-end">
+                                @if (balance.NetBalance > 0.01m)
+                                {
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 fw-bold fs-6">
+                                        + @Model.Group.Currency @balance.NetBalance.ToString("N2")
+                                    </span>
+                                    <small class="d-block text-success mt-1">gets back</small>
+                                }
+                                else if (balance.NetBalance < -0.01m)
+                                {
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2 fw-bold fs-6">
+                                        - @Model.Group.Currency @Math.Abs(balance.NetBalance).ToString("N2")
+                                    </span>
+                                    <small class="d-block text-danger mt-1">owes</small>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-light text-muted border px-3 py-2 fw-normal fs-6">
+                                        Settled
+                                    </span>
+                                }
+                            </div>
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+
+        <!-- Group Members List -->
+        <div class="card border-0 shadow-sm rounded-3">
+            <div class="card-header bg-white py-3 border-0">
+                <h5 class="fw-bold mb-0"><i class="bi bi-people me-2 text-primary"></i>Group Members</h5>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    @foreach (var member in Model.Members)
+                    {
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-4">
+                            <div>
+                                <span class="fw-bold">@member.FullName</span>
+                                <small class="text-muted d-block">@member.Email</small>
+                            </div>
+                            <span class="badge bg-light text-secondary">Member</span>
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Suggested Settlements & Expense History -->
+    <div class="col-lg-7">
+        <!-- Simplified Debt Settlements -->
+        <div class="card border-0 shadow-sm rounded-3 mb-4">
+            <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="fw-bold mb-0"><i class="bi bi-arrow-left-right text-primary me-2"></i>Suggested Settlements</h5>
+                    <small class="text-muted">Simplified debt minimization chain</small>
+                </div>
+                <span class="badge bg-primary-subtle text-primary fw-bold">Smart Simplification</span>
+            </div>
+            <div class="card-body p-3">
+                @if (Model.SimplifiedDebts == null || !Model.SimplifiedDebts.Any())
+                {
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-check-circle fs-1 text-success d-block mb-2"></i>
+                        <h6 class="fw-bold text-dark">Everyone is All Settled Up!</h6>
+                        <small>No pending balances or money owed between members.</small>
+                    </div>
+                }
+                else
+                {
+                    <div class="d-flex flex-column gap-3">
+                        @foreach (var debt in Model.SimplifiedDebts)
+                        {
+                            <div class="border rounded-3 p-3 bg-white shadow-xs">
+                                <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
+                                    <div>
+                                        <div class="fs-6 fw-bold text-dark">
+                                            <span class="text-danger">@debt.DebtorName</span>
+                                            <i class="bi bi-arrow-right mx-2 text-muted"></i>
+                                            <span class="text-success">@debt.CreditorName</span>
+                                        </div>
+                                        <div class="text-primary fw-bold fs-5">
+                                            @debt.Currency @debt.Amount.ToString("N2")
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <form asp-controller="Expense" asp-action="RecordSettlement" method="post" class="m-0">
+                                            <input type="hidden" name="groupId" value="@Model.Group.Id" />
+                                            <input type="hidden" name="debtorId" value="@debt.DebtorId" />
+                                            <input type="hidden" name="creditorId" value="@debt.CreditorId" />
+                                            <input type="hidden" name="amount" value="@debt.Amount" />
+                                            <input type="hidden" name="currency" value="@debt.Currency" />
+                                            <button type="submit" class="btn btn-success btn-sm fw-bold px-3">
+                                                <i class="bi bi-check-all me-1"></i> Mark as Paid
+                                            </button>
+                                        </form>
+
+                                        <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#explanation-@debt.DebtId">
+                                            <i class="bi bi-info-circle me-1"></i> Show More
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Collapsible "Show More" Calculation Chain -->
+                                <div class="collapse mt-3" id="explanation-@debt.DebtId">
+                                    <div class="p-3 bg-light rounded-2 border border-secondary-subtle small">
+                                        <h6 class="fw-bold text-dark mb-2">
+                                            <i class="bi bi-calculator me-1 text-primary"></i> Calculation Chain & Derivation
+                                        </h6>
+                                        <ul class="mb-0 ps-3 text-muted">
+                                            @foreach (var step in debt.ExplanationSteps)
+                                            {
+                                                <li class="mb-1">@step</li>
+                                            }
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Expenses List -->
+        <div class="card border-0 shadow-sm rounded-3">
+            <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0"><i class="bi bi-receipt me-2 text-primary"></i>Expense History</h5>
+                <a asp-controller="Expense" asp-action="Create" asp-route-groupId="@Model.Group.Id" class="btn btn-sm btn-primary fw-bold">
+                    <i class="bi bi-plus"></i> Add
+                </a>
+            </div>
+            <div class="card-body p-0">
+                @if (Model.Expenses == null || !Model.Expenses.Any())
+                {
+                    <div class="text-center py-4 text-muted">
+                        <p class="mb-0">No expenses recorded yet in this group.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Expense Title</th>
+                                    <th>Amount</th>
+                                    <th>Paid By</th>
+                                    <th>Split Type</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var exp in Model.Expenses)
+                                {
+                                    <tr>
+                                        <td>
+                                            <strong class="d-block text-dark">@exp.Title</strong>
+                                            <small class="text-muted">@exp.CreatedAt.ToString("MMM dd, yyyy")</small>
+                                        </td>
+                                        <td class="fw-bold text-dark">
+                                            @exp.Currency @exp.Amount.ToString("N2")
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-light text-dark border">@exp.PaidByName</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary-subtle text-secondary">@exp.SplitType</span>
+                                        </td>
+                                        <td>
+                                            <a asp-controller="Expense" asp-action="Details" asp-route-id="@exp.Id" class="btn btn-outline-primary btn-sm">
+                                                Details
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
