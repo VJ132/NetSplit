@@ -1,0 +1,47 @@
+@model NetSplit.Models.AddMemberViewModel
+@{
+    ViewData["Title"] = "Add Member";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow-sm border-0 rounded-3">
+            <div class="card-body p-4">
+                <div class="mb-4">
+                    <a asp-controller="Group" asp-action="Details" asp-route-id="@Model.GroupId" class="text-decoration-none text-muted small">
+                        <i class="bi bi-arrow-left me-1"></i> Back to @Model.GroupName Dashboard
+                    </a>
+                    <h3 class="fw-bold mt-2">Add Member</h3>
+                    <p class="text-muted small">Add a registered user to <strong>@Model.GroupName</strong> by their email</p>
+                </div>
+
+                <form asp-action="AddMember" method="post">
+                    <input type="hidden" asp-for="GroupId" />
+                    <input type="hidden" asp-for="GroupName" />
+
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <div class="mb-4">
+                        <label asp-for="Email" class="form-label font-weight-bold">Member's Email Address</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                            <input asp-for="Email" class="form-control" placeholder="aarav@example.com" />
+                        </div>
+                        <span asp-validation-for="Email" class="text-danger"></span>
+                        <div class="form-text mt-2">
+                            The user must have registered a NetSplit account with this email address.
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 py-2 fw-bold shadow-sm">
+                        <i class="bi bi-person-plus-fill me-1"></i> Add Member to Group
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

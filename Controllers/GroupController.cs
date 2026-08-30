@@ -258,5 +258,83 @@ namespace NetSplit.Controllers
 
             return View(viewModel);
         }
+
+        [HttpGet]
+        public IActionResult AddMember(int groupId)
+        {
+            int? userId = GetCurrentUserId();
+            if (userId == null) return RedirectToAction("Login", "Account");
+
+            using var connection = _database.GetConnection();
+            connection.Open();
+
+            var cmd = connection.CreateCommand();
+            cmd.CommandText = "SELECT Name FROM Groups WHERE Id = @GroupId";
+            cmd.Parameters.AddWithValue("@GroupId", groupId);
+            string? name = cmd.ExecuteScalar()?.ToString();
+
+            if (name == null) return RedirectToAction("Index", "Home");
+
+            return View(new AddMemberViewModel { GroupId = groupId, GroupName = name });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult AddMember(AddMemberViewModel model)
+        {
+            int? userId = GetCurrentUserId();
+            if (userId == null) return RedirectToAction("Login", "Account");
+
+            if (!ModelState.IsValid) return View(model);
+
+            using var connection = _database.GetConnection();
+            connection.Open();
+
+            // Find user by email
+            var userCmd = connection.CreateCommand();
+            userCmd.CommandText = "SELECT Id, FullName FROM Users WHERE Email = @Email";
+            userCmd.Parameters.AddWithValue("@Email", model.Email.Trim().ToLower());
+
+            int targetUserId = 0;
+            string targetName = "";
+            using (var reader = userCmd.ExecuteReader())
+            {
+                if (reader.Read())
+                {
+                    targetUserId = reader.GetInt32(0);
+                    targetName = reader.GetString(1);
+                }
+            }
+
+            if (targetUserId == 0)
+            {
+                ModelState.AddModelError("Email", "No user found with this email address. Ask them to register first!");
+                return View(model);
+            }
+
+            // Check if already member
+            var checkCmd = connection.CreateCommand();
+            checkCmd.CommandText = "SELECT COUNT(*) FROM GroupMembers WHERE GroupId = @GroupId AND UserId = @UserId";
+            checkCmd.Parameters.AddWithValue("@GroupId", model.GroupId);
+            checkCmd.Parameters.AddWithValue("@UserId", targetUserId);
+            long count = (long)(checkCmd.ExecuteScalar() ?? 0);
+
+            if (count > 0)
+            {
+                ModelState.AddModelError("Email", $"{targetName} is already a member of this group.");
+                return View(model);
+            }
+
+            // Add Member
+            var addCmd = connection.CreateCommand();
+            addCmd.CommandText = "INSERT INTO GroupMembers (GroupId, UserId, JoinedAt) VALUES (@GroupId, @UserId, @JoinedAt)";
+            addCmd.Parameters.AddWithValue("@GroupId", model.GroupId);
+            addCmd.Parameters.AddWithValue("@UserId", targetUserId);
+            addCmd.Parameters.AddWithValue("@JoinedAt", DateTime.UtcNow);
+            addCmd.ExecuteNonQuery();
+
+            TempData["SuccessMessage"] = $"{targetName} has been added to the group!";
+            return RedirectToAction("Details", new { id = model.GroupId });
+        }
     }
 }
