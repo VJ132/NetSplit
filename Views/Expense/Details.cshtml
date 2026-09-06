@@ -1,0 +1,62 @@
+@model NetSplit.Models.Expense
+@{
+    ViewData["Title"] = "Expense Details - " + Model.Title;
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-7 col-lg-6">
+        <div class="card shadow-sm border-0 rounded-3">
+            <div class="card-body p-4">
+                <div class="mb-4">
+                    <a asp-controller="Group" asp-action="Details" asp-route-id="@Model.GroupId" class="text-decoration-none text-muted small">
+                        <i class="bi bi-arrow-left me-1"></i> Back to Group Dashboard
+                    </a>
+                    <h3 class="fw-bold mt-2 mb-1">@Model.Title</h3>
+                    <span class="badge bg-primary-subtle text-primary fw-bold px-2 py-1">@ViewBag.GroupName</span>
+                </div>
+
+                <div class="bg-light p-4 rounded-3 text-center mb-4 border">
+                    <span class="text-muted d-block small text-uppercase fw-bold">Total Expense Amount</span>
+                    <span class="display-5 fw-bold text-dark">@Model.Currency @Model.Amount.ToString("N2")</span>
+                    <div class="mt-2 text-muted">
+                        Paid by <strong class="text-dark">@Model.PaidByName</strong> on @Model.CreatedAt.ToString("MMMM dd, yyyy")
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="fw-bold mb-0">Split Breakdown</h5>
+                        <span class="badge bg-secondary">@Model.SplitType Split</span>
+                    </div>
+
+                    <div class="card border rounded-3 p-0 overflow-hidden">
+                        <ul class="list-group list-group-flush">
+                            @foreach (var share in Model.Shares)
+                            {
+                                <li class="list-group-item d-flex justify-content-between align-items-center py-3 px-4">
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-person-circle fs-5 me-3 text-secondary"></i>
+                                        <div>
+                                            <strong class="d-block text-dark">@share.UserName</strong>
+                                            @if (share.UserId == Model.PaidByUserId)
+                                            {
+                                                <small class="badge bg-success-subtle text-success">Payer</small>
+                                            }
+                                        </div>
+                                    </div>
+                                    <div class="fw-bold fs-6 text-dark">
+                                        @Model.Currency @share.AmountOwed.ToString("N2")
+                                    </div>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+
+                <a asp-controller="Group" asp-action="Details" asp-route-id="@Model.GroupId" class="btn btn-outline-secondary w-100 fw-bold py-2 mt-3">
+                    Return to Group Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
